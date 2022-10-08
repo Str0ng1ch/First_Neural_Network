@@ -12,6 +12,19 @@ learning_rate = 0.1
 SIZE = 28
 
 
+class Normalization:
+    """ Класс нормализации данных """
+    def normalization(self, inputs):
+        minimum = np.min(inputs)
+        max_minus_min = np.max(inputs) - minimum
+        self.normalization_output = (inputs - minimum) / max_minus_min
+
+    def denormalization(self, inputs):
+        minimum = np.min(inputs)
+        max_minus_min = np.max(inputs) - minimum
+        self.denormalization_output = inputs * max_minus_min + minimum
+
+
 class Layer:
     """ Класс слоя нейронной сети """
     def __init__(self, n_inputs, n_neurons):
@@ -34,31 +47,52 @@ class RMS:
         self.output = 0.5 * (inputs - target) ** 2
 
 
-def main():
-    inputs = TRAIN_IMAGES[0].reshape(1, 784)
-    cv2.imshow("Image", TRAIN_IMAGES[0])
+def print_digit(array):
+    cv2.imshow("Image", array)
     for i in range(28):
         for j in range(28):
-            digit = TRAIN_IMAGES[0, i, j]
-            print((3 - len(str(int(digit)))) * ' ' + str(int(digit)), end=' ')
+            digit = array[i, j]
+            print((3 - len(str(float(digit)))) * ' ' + str(float(digit)), end=' ')
         print()
+
+
+def main():
+    inputs = TRAIN_IMAGES[0].reshape(1, 784)
+    normalization = Normalization()
+    input_layer = Layer(784, 36)
+    hidden_layer1 = Layer(36, 14)
+    output_layer = Layer(14, 10)
     activation = Activation()
+    rms = RMS()
 
-    layer1 = Layer(784, 36)
-    layer1.forward(inputs)
-    activation.forward(layer1.output)
-    print(activation.output)
+    normalization.normalization(inputs)
+    inputs = normalization.normalization_output
 
-    layer2 = Layer(36, 14)
-    layer2.forward(activation.output)
-    activation.forward(layer2.output)
-    print(activation.output)
+    for _ in range(5):
+        input_layer.forward(inputs)
+        activation.forward(input_layer.output)
+        input_activation = activation.output
+        print(activation.output)
 
-    layer3 = Layer(14, 10)
-    layer3.forward(activation.output)
-    activation.forward(layer3.output)
+        hidden_layer1.forward(input_activation)
+        activation.forward(hidden_layer1.output)
+        hidden1_activation = activation.output
+        print(activation.output)
 
-    print(activation.output)
+        output_layer.forward(hidden1_activation)
+        activation.forward(output_layer.output)
+        output_activation = activation.output
+
+        print(output_activation)
+
+        target = np.array([0] * 10)
+        target[TRAIN_LABELS[0] - 1] = 1
+        rms.forward(output_activation, target)
+        print(rms.output)
+
+
+    normalization.denormalization(output_activation)
+    print(normalization.denormalization_output)
     cv2.waitKey()
 
 
